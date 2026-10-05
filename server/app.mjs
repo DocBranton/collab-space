@@ -1,6 +1,12 @@
 import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { actorFromRequestHeaders } from "./identity.mjs";
 import { ConflictError } from "./services/persistence.mjs";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../client");
+const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".png": "image/png" };
 
 export function createCollaborationApp(options) {
   return createServer(async (req, res) => {
@@ -14,46 +20,60 @@ export function createCollaborationApp(options) {
 
 async function route(store, req, res) {
   const url = new URL(req.url || "/", "http://collab.local");
-  const path = url.pathname;
+  const pathname = url.pathname;
   res.setHeader("x-request-id", req.headers["x-request-id"] || crypto.randomUUID());
-  if (req.method === "GET" && path === "/api/health") return send(res, 200, { status: "ok" });
-  if (req.method === "GET" && path === "/api/me") {
+  if (req.method === "GET" && (pathname === "/" || pathname === "/index.html")) return sendFile(res, "index.html");
+  if (req.method === "GET" && (pathname.startsWith("/previews/") || pathname.startsWith("/assets/"))) return sendFile(res, pathname.slice(1));
+  if (req.method === "GET" && pathname === "/api/health") return send(res, 200, { status: "ok" });
+  if (req.method === "GET" && pathname === "/api/me") {
     const actor = actorFromRequestHeaders(req.headers);
     return send(res, 200, { ...actor, canAdmin: actor.role === "admin" });
   }
-  if (req.method === "GET" && path === "/api/collaboration/apps") {
+  if (req.method === "GET" && pathname === "/api/collaboration/apps") {
     return send(res, 200, { host: { healthy: true }, source: { provider: "github", available: false }, apps: await store.gallery() });
   }
-  if (req.method === "GET" && path.startsWith("/api/collaboration/apps/")) {
-    const card = await store.app(path.split("/").pop());
+  if (req.method === "GET" && pathname.startsWith("/api/collaboration/apps/")) {
+    const card = await store.app(pathname.split("/").pop());
     if (!card) return send(res, 404, { error: "Application not found" });
     return send(res, 200, card);
   }
-  if (req.method === "GET" && path === "/api/collaboration/feedback-requests") {
+  if (req.method === "GET" && pathname === "/api/collaboration/feedback-requests") {
     const actor = actorFromRequestHeaders(req.headers);
     return send(res, 200, await store.requests(url.searchParams.get("scope") === "all" ? "all" : "mine", actor.id));
   }
-  if (req.method === "POST" && path === "/api/collaboration/feedback") {
+  if (req.method === "POST" && pathname === "/api/collaboration/feedback") {
     const actor = actorFromRequestHeaders(req.headers);
     const body = await readJson(req);
     if (!body.appId || !body.releaseId || !body.category || !body.comment || !body.idempotencyKey) return send(res, 400, { error: "appId, releaseId, category, comment, and idempotencyKey are required" });
     return send(res, 201, await store.createFeedback(body, actor));
   }
-  if (req.method === "GET" && path === "/api/collaboration/activity") return send(res, 200, await store.activityFor(actorFromRequestHeaders(req.headers).id));
-  if (req.method === "GET" && path === "/api/collaboration/preferences") return send(res, 200, await store.preferences(actorFromRequestHeaders(req.headers).id));
-  if (req.method === "PUT" && path === "/api/collaboration/preferences") {
+  if (req.method === "GET" && pathname === "/api/collaboration/activity") return send(res, 200, await store.activityFor(actorFromRequestHeaders(req.headers).id));
+  if (req.method === "GET" && pathname === "/api/collaboration/preferences") return send(res, 200, await store.preferences(actorFromRequestHeaders(req.headers).id));
+  if (req.method === "PUT" && pathname === "/api/collaboration/preferences") {
     const actor = actorFromRequestHeaders(req.headers);
     const body = await readJson(req);
     return send(res, 200, await store.updatePreferences(actor.id, { galleryView: body.galleryView, sortMode: body.sortMode }, Number(body.versionNo)));
   }
-  if (req.method === "POST" && path.startsWith("/api/admin/releases/") && path.endsWith("/replace")) {
+  if (req.method === "POST" && pathname.startsWith("/api/admin/releases/") && pathname.endsWith("/replace")) {
     const actor = actorFromRequestHeaders(req.headers);
     if (actor.role !== "admin") return send(res, 403, { error: "Admin role required" });
     const body = await readJson(req);
-    await store.replaceRelease(actor, path.split("/")[4], Number(body.versionNo), String(body.version || ""));
+    await store.replaceRelease(actor, pathname.split("/")[4], Number(body.versionNo), String(body.version || ""));
     return send(res, 200, { ok: true });
   }
   send(res, 404, { error: "Not found" });
+}
+
+async function sendFile(res, rel) {
+  const file = path.resolve(root, rel);
+  if (!file.startsWith(root)) return send(res, 404, { error: "Not found" });
+  try {
+    const body = await readFile(file);
+    res.writeHead(200, { "content-type": types[path.extname(file)] || "application/octet-stream" });
+    res.end(body);
+  } catch {
+    send(res, 404, { error: "Not found" });
+  }
 }
 
 function send(res, status, body) {
