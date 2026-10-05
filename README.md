@@ -14,7 +14,13 @@ Within the WDP seven-slot model, Collaboration occupies one shared Databricks Ap
 
 The implementation target is defined in [`docs/COLLABORATION_SPACE_DEVELOPMENT_CONTRACT.md`](docs/COLLABORATION_SPACE_DEVELOPMENT_CONTRACT.md).
 
+Mandatory architectural addenda:
+
+- [`Addendum A — Multi-User Concurrency & Session Isolation`](docs/ADDENDUM_A_MULTI_USER_CONCURRENCY.md) — establishes concurrent authenticated-user support, user/session isolation, concurrency-safe persistence, shared-compute behavior, graceful degradation, observability, and concurrency/load acceptance testing.
+
 > The approved Collaboration Space concept is the visual and behavioral contract. Implementation should look and feel like the concept—not merely contain the same information.
+
+> One Databricks App slot does not imply one user or one logical application at a time. Collaboration Space is a shared multi-user host.
 
 ## Target Stack
 
