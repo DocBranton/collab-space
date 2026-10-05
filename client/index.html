@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Collaboration Space</title>
+<style>
+  :root { --navy:#07111f; --blue:#1f6feb; --green:#17a34a; --amber:#e39b2b; --bg:#eef2f6; --line:#e6ebf1; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, "Segoe UI", system-ui, sans-serif; background: #050b14; color: #122033; }
+  .stage { width: 3440px; height: 1440px; transform-origin: top left; background: var(--bg); display: grid; grid-template-columns: 232px 1fr; grid-template-rows: 64px 1fr; }
+  .topbar { grid-column: 1 / -1; background: #0b1730; color: white; display: flex; align-items: center; gap: 18px; padding: 0 16px; }
+  .brand h1 { margin: 0; font-size: 18px; letter-spacing: .04em; }
+  .brand p { margin: 2px 0 0; color: #9fb0c8; font-size: 12px; }
+  .topnav button { border: 0; background: transparent; color: #d5deea; height: 36px; border-radius: 8px; padding: 0 12px; }
+  .topnav button.active { background: var(--blue); color: white; }
+  .spacer { flex: 1; }
+  .who { display: flex; align-items: center; gap: 8px; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--blue); display: grid; place-items: center; font-weight: 700; }
+  .sidebar { background: #071422; color: #d5deea; padding: 14px 12px; }
+  .navbtn { width: 100%; height: 38px; border: 0; background: transparent; color: inherit; text-align: left; border-radius: 8px; padding: 0 12px; }
+  .navbtn.active { background: var(--blue); }
+  .conf { margin: 16px 12px 8px; font-size: 11px; letter-spacing: .12em; color: #7f90a8; }
+  .main { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .ribbon { display: grid; grid-template-columns: 150px repeat(7, 1fr); gap: 10px; }
+  .slot, .gauge { background: white; border: 1px solid var(--line); border-radius: 12px; min-height: 104px; padding: 10px; text-align: left; }
+  .slot.sel { outline: 2px solid #d7b56a; }
+  .badge { float: right; font-size: 10px; font-weight: 800; border-radius: 999px; padding: 3px 7px; }
+  .bronze { background: #f4e7cf; color: #8a6230; } .silver { background: #eef1f4; color: #607086; } .gold { background: #f8efd8; color: #8a6a22; }
+  .hero { height: 92px; border-radius: 12px; color: white; display: flex; justify-content: space-between; align-items: center; padding: 0 28px; background: #1a120c center/cover no-repeat; position: relative; }
+  .hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(48,28,10,.82), rgba(20,12,8,.25)); border-radius: 12px; }
+  .hero > * { position: relative; }
+  .panel { flex: 1; background: white; border-radius: 14px; border: 1px solid var(--line); padding: 12px; display: flex; flex-direction: column; }
+  .controls { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .tab, .select, .q { height: 36px; border: 1px solid var(--line); border-radius: 9px; background: #f7f9fb; padding: 0 10px; }
+  .tab.active { background: #eaf2ff; color: var(--blue); }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .card { border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+  .shot { height: 168px; margin: 0 12px; border-radius: 8px; background: #f4f6f8 center/cover no-repeat; }
+  .shot.dim { filter: grayscale(.35) brightness(.86); }
+  .wn { padding: 8px 12px; font-size: 12.5px; }
+  .callout { margin: 8px 12px 0; background: #fff6ee; color: #b86116; border-radius: 8px; padding: 8px; font-size: 12.5px; }
+  .actions { margin-top: auto; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+  button.primary { background: var(--blue); color: white; border: 0; border-radius: 8px; height: 36px; font-weight: 700; }
+  button.secondary, button:disabled { height: 36px; border-radius: 8px; border: 1px solid var(--line); background: white; }
+  button:disabled { background: #f2f4f7; color: #98a2b3; }
+  .ok { color: var(--green); font-weight: 700; } .wait { color: var(--amber); font-weight: 700; }
+  .modal { position: fixed; inset: 0; background: rgba(7,17,31,.55); display: none; place-items: center; }
+  .modal.show { display: grid; }
+  .dialog { width: 520px; background: white; border-radius: 14px; padding: 18px; }
+  .toast { position: fixed; right: 16px; bottom: 16px; background: #122033; color: white; padding: 12px 14px; border-radius: 10px; display: none; }
+  .toast.show { display: block; }
+  .fitbar { position: fixed; top: 10px; right: 10px; z-index: 5; }
+  .fitbar button { height: 32px; border: 0; border-radius: 8px; background: rgba(7,17,31,.86); color: white; padding: 0 10px; }
+</style>
+</head>
+<body>
+<div class="fitbar"><button id="fit" type="button">Fit width</button><button id="native" type="button">1:1 · 3440×1440</button></div>
+<div class="viewport" id="viewport" style="height:100vh;overflow:auto">
+  <div class="stage" id="stage">
+    <header class="topbar">
+      <div class="brand"><h1>DATABRICKS APP COMMAND &amp; CONTROL</h1><p>Build · Test · Deploy · Monitor · Govern</p></div>
+      <nav class="topnav"><button type="button">Command Center</button><button class="active" type="button">Applications</button><button type="button">Environments</button><button type="button">Deployments</button><button type="button">Testing</button><button type="button">Releases</button><button type="button">Insights</button></nav>
+      <div class="spacer"></div>
+      <div class="who"><div class="avatar" id="avatar">--</div><div><strong id="who">Loading</strong><span id="role">Collaboration</span></div></div>
+    </header>
+    <aside class="sidebar">
+      <button class="navbtn" type="button">Command Center</button>
+      <button class="navbtn active" type="button">Applications</button>
+      <button class="navbtn" type="button">Environments</button>
+      <button class="navbtn" type="button">Deployments</button>
+      <button class="navbtn" type="button">Testing &amp; Quality</button>
+      <button class="navbtn" type="button">Releases</button>
+      <button class="navbtn" type="button">Security &amp; Compliance</button>
+      <button class="navbtn" type="button">Monitoring &amp; Observability</button>
+      <button class="navbtn" type="button">Reports &amp; Analytics</button>
+      <div class="conf">CONFIGURATION</div>
+      <button class="navbtn" type="button">App Catalog</button>
+      <button class="navbtn" type="button">Environment Settings</button>
+      <button class="navbtn" type="button">Access &amp; Roles</button>
+      <button class="navbtn" type="button">Audit Log</button>
+    </aside>
+    <main class="main">
+      <section class="ribbon">
+        <div class="gauge"><b>WDP APP SLOTS</b><div style="font-size:22px;font-weight:800">7/7</div><span>Slots Allocated</span></div>
+        <button class="slot sel" data-slot="collab" type="button"><span class="badge bronze">BRONZE</span><div>SLOT 1</div><strong>Collaboration</strong><div>5 Applications<br>Shared Environment</div><div class="ok">Healthy</div></button>
+        <button class="slot" data-slot="uat" type="button"><span class="badge silver">SILVER</span><div>SLOT 2</div><strong>Test / UAT</strong><div>2 Active Candidates<br>UAT &amp; Cyber Review</div><div class="ok">Healthy</div></button>
+        <button class="slot" data-slot="prod" type="button"><span class="badge gold">GOLD</span><div>SLOT 3</div><strong>GMW Production</strong><div class="ok">Healthy</div></button>
+        <button class="slot" data-slot="prod" type="button"><span class="badge gold">GOLD</span><div>SLOT 4</div><strong>Engineering Production</strong><div class="ok">Healthy</div></button>
+        <button class="slot" data-slot="prod" type="button"><span class="badge gold">GOLD</span><div>SLOT 5</div><strong>Requirements Production</strong><div class="ok">Healthy</div></button>
+        <button class="slot" data-slot="prod" type="button"><span class="badge gold">GOLD</span><div>SLOT 6</div><strong>Innovation Hub Production</strong><div class="ok">Healthy</div></button>
+        <button class="slot" data-slot="prod" type="button"><span class="badge gold">GOLD</span><div>SLOT 7</div><strong>Data &amp; Analytics Production</strong><div class="ok">Healthy</div></button>
+      </section>
+      <section class="hero" id="hero">
+        <div><h2>COLLABORATION SPACE <span class="badge bronze">BRONZE ENVIRONMENT</span></h2><p>Explore emerging capabilities · Experience new features · Provide feedback · Shape what gets fielded</p></div>
+        <div><strong>INNOVATE → COLLABORATE → VALIDATE → FIELD</strong><div>Turn ideas into operational impact.</div></div>
+      </section>
+      <section class="panel">
+        <div class="controls">
+          <button class="tab active" data-tab="all" type="button">All Applications <span id="count">…</span></button>
+          <button class="tab" data-tab="mine" type="button">My Activity</button>
+          <button class="tab" data-tab="asks" type="button">Feedback Requests</button>
+          <input class="q" id="q" placeholder="Search applications..." />
+          <select class="select" id="status"><option value="all">All Status</option><option value="available">Available</option><option value="feedback">Feedback Requested</option><option value="updating">Updating</option></select>
+          <select class="select" id="sort"><option value="featured">Sort by: Featured</option><option value="name">Name</option></select>
+        </div>
+        <div class="grid" id="grid"></div>
+        <div id="mine" hidden></div>
+        <div id="asks" hidden></div>
+      </section>
+    </main>
+  </div>
+</div>
+<div class="modal" id="modal"><form class="dialog" id="form"><h3>Provide Feedback</h3><p id="ctx"></p><label>Category</label><select name="category"><option>Usability</option><option>Workflow gap</option><option>Defect</option></select><label>Comment</label><textarea name="comment" required style="width:100%;min-height:90px"></textarea><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button type="button" id="cancel">Cancel</button><button class="primary" type="submit">Submit Feedback</button></div></form></div>
+<div class="toast" id="toast"></div>
+<script>
+const grid = document.getElementById("grid");
+const q = document.getElementById("q");
+let apps = [];
+let current = null;
+document.getElementById("hero").style.backgroundImage = "url('/previews/hero.jpg')";
+function toast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2600); }
+function render() {
+  const query = q.value.trim().toLowerCase();
+  const status = document.getElementById("status").value;
+  let rows = apps.filter(a => (a.name + a.subtitle).toLowerCase().includes(query));
+  if (status === "available") rows = rows.filter(a => a.status === "available" && !a.feedbackRequested);
+  if (status === "feedback") rows = rows.filter(a => a.feedbackRequested);
+  if (status === "updating") rows = rows.filter(a => a.status === "updating");
+  if (document.getElementById("sort").value === "featured") rows.sort((a,b) => Number(b.feedbackRequested) - Number(a.feedbackRequested));
+  if (document.getElementById("sort").value === "name") rows.sort((a,b) => a.name.localeCompare(b.name));
+  document.getElementById("count").textContent = rows.length;
+  grid.innerHTML = rows.map(a => {
+    const blocked = a.status !== "available" || !a.launchRoute;
+    const state = a.status === "updating" ? '<span class="wait">Updating</span>' : '<span class="ok">Available</span>';
+    const body = a.feedbackRequested
+      ? `<div class="callout"><b>Feedback Requested</b><ul>${a.changes.map(c => `<li>${c}</li>`).join("")}</ul></div>`
+      : `<div class="wn"><b>What's New</b><ul>${a.changes.map(c => `<li>${c}</li>`).join("")}</ul>${a.status === "updating" ? `<div class="callout">Version ${a.version} is updating. Expected availability: ${a.expectedAt || "unknown"}</div>` : ""}</div>`;
+    const action = blocked
+      ? `<button disabled type="button">Preview Unavailable</button><button class="secondary" data-status="${a.id}" type="button">View Update Status</button>`
+      : `<button class="primary" data-launch="${a.id}" type="button">Launch Preview</button><button class="secondary" data-fb="${a.id}" type="button">Provide Feedback</button>`;
+    return `<article class="card"><div style="padding:10px 12px"><strong>${a.name}</strong><div>${a.subtitle}</div></div><div class="shot ${blocked ? "dim" : ""}" style="background-image:url('${a.previewAsset}')"></div><div style="display:flex;justify-content:space-between;padding:8px 12px"><span>${a.version}</span>${state}</div>${body}<div class="wn">${a.reviewers} Reviewers · ${a.comments} Comments · Updated ${a.updated}</div><div class="actions">${action}</div></article>`;
+  }).join("") || `<p>Loading gallery…</p>`;
+}
+async function load() {
+  const [me, gallery] = await Promise.all([fetch("/api/me").then(r => r.json()), fetch("/api/collaboration/apps").then(r => r.json())]);
+  document.getElementById("who").textContent = me.displayName || "Signed in";
+  document.getElementById("role").textContent = me.role || "reviewer";
+  document.getElementById("avatar").textContent = (me.displayName || "DB").split(" ").map(p => p[0]).slice(0,2).join("");
+  apps = gallery.apps || [];
+  render();
+}
+q.addEventListener("input", render);
+document.getElementById("status").addEventListener("change", render);
+document.getElementById("sort").addEventListener("change", render);
+document.body.addEventListener("click", async (e) => {
+  const launch = e.target.closest("[data-launch]");
+  const fb = e.target.closest("[data-fb]");
+  const status = e.target.closest("[data-status]");
+  const tab = e.target.closest("[data-tab]");
+  const slot = e.target.closest("[data-slot]");
+  if (launch) {
+    const app = apps.find(a => a.id === launch.dataset.launch);
+    if (!app.launchRoute) return toast("This preview cannot launch while updating.");
+    toast(`Launch Preview · ${app.name} · ${app.version}`);
+  }
+  if (status) toast("This logical application is updating. Other previews remain available.");
+  if (fb) {
+    current = apps.find(a => a.id === fb.dataset.fb);
+    document.getElementById("ctx").textContent = `${current.name} · ${current.version}`;
+    document.getElementById("modal").classList.add("show");
+  }
+  if (tab) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    const id = tab.dataset.tab;
+    grid.hidden = id !== "all";
+    document.getElementById("mine").hidden = id !== "mine";
+    document.getElementById("asks").hidden = id !== "asks";
+    if (id === "mine") document.getElementById("mine").innerHTML = (await fetch("/api/collaboration/activity").then(r => r.json())).map(row => `<p>${row.action} · ${row.appId} · ${row.releaseId}</p>`).join("") || "<p>No activity yet.</p>";
+    if (id === "asks") document.getElementById("asks").innerHTML = (await fetch("/api/collaboration/feedback-requests?scope=all").then(r => r.json())).map(row => `<p><strong>${row.title}</strong> · ${row.releaseId} · due ${row.dueAt}</p>`).join("");
+  }
+  if (slot) {
+    document.querySelectorAll(".slot").forEach(s => s.classList.remove("sel"));
+    slot.classList.add("sel");
+    if (slot.dataset.slot !== "collab") toast("TEST/UAT and Production stay outside this bronze slot.");
+  }
+});
+document.getElementById("cancel").onclick = () => document.getElementById("modal").classList.remove("show");
+document.getElementById("form").onsubmit = async (e) => {
+  e.preventDefault();
+  const body = { appId: current.id, releaseId: current.releaseId, category: e.target.category.value, comment: e.target.comment.value, idempotencyKey: crypto.randomUUID() };
+  const response = await fetch("/api/collaboration/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  if (!response.ok) return toast("Feedback was not saved.");
+  document.getElementById("modal").classList.remove("show");
+  e.target.reset();
+  apps = (await fetch("/api/collaboration/apps").then(r => r.json())).apps;
+  render();
+  toast(`Feedback saved for ${current.name} ${current.version}.`);
+};
+const stage = document.getElementById("stage");
+const viewport = document.getElementById("viewport");
+function fit() { stage.style.transform = `scale(${Math.min(viewport.clientWidth / 3440, viewport.clientHeight / 1440)})`; }
+document.getElementById("fit").onclick = fit;
+document.getElementById("native").onclick = () => stage.style.transform = "scale(1)";
+window.addEventListener("resize", fit);
+render();
+load().catch(() => toast("Signed-in Databricks identity is required."));
+fit();
+</script>
+</body>
+</html>
