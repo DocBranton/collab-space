@@ -1,0 +1,6 @@
+command: ["npm", "run", "start"]
+env:
+  - name: COLLAB_PERSISTENCE
+    value: "file"
+  - name: COLLAB_DATA_PATH
+    value: "/tmp/collab-space-data.json"

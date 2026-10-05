@@ -1,0 +1,13 @@
+{
+  "name": "collab-space",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Databricks App Command & Control — Collaboration Space (WDP Slot 1, Bronze)",
+  "scripts": {
+    "dev": "node server/server.mjs",
+    "start": "node server/server.mjs",
+    "test": "node --test tests/concurrency.test.mjs tests/permissions.test.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
