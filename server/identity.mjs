@@ -7,6 +7,7 @@ const DEV_USERS = {
 export function actorFromRequestHeaders(headers) {
   const email = header(headers, "x-forwarded-email") || header(headers, "x-databricks-user-email");
   const name = header(headers, "x-forwarded-preferred-username") || header(headers, "x-forwarded-user");
+  if (!email && process.env.COLLAB_ALLOW_DEV_IDENTITY === "1") return DEV_USERS["david.branton@example.mil"];
   if (!email) throw Object.assign(new Error("Authenticated Databricks user required"), { status: 401 });
   return DEV_USERS[email.toLowerCase()] || { id: `user-${email.toLowerCase()}`, displayName: name || email, email, role: "reviewer" };
 }
