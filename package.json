@@ -5,9 +5,9 @@
   "type": "module",
   "description": "Databricks App Command & Control — Collaboration Space (WDP Slot 1, Bronze)",
   "scripts": {
-    "dev": "node server/server.mjs",
+    "dev": "COLLAB_ALLOW_DEV_IDENTITY=1 node server/server.mjs",
     "start": "node server/server.mjs",
-    "test": "node --test tests/concurrency.test.mjs tests/permissions.test.mjs"
+    "test": "node --test tests/concurrency.test.mjs tests/permissions.test.mjs tests/gallery.test.mjs"
   },
   "engines": { "node": ">=20" }
 }

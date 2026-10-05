@@ -34,3 +34,9 @@ Mandatory architectural addenda:
 ## Primary Experience
 
 The Collaboration landing page behaves like an internal capability gallery rather than a DevOps console. Large visual launch tiles show the current preview, version, availability, What's New, review activity, feedback requests, and actions to **Launch Preview** or **Provide Feedback**.
+
+## Run
+
+`npm test` covers concurrent attribution, dedupe, preference isolation, release immutability, authorization, and the gallery shell.
+
+`npm run dev` serves the gallery at port 8000 with a local-only Databricks stand-in. `npm start` requires the forwarded user header. See [`docs/FOUNDATION.md`](docs/FOUNDATION.md).
