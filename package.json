@@ -7,7 +7,14 @@
   "scripts": {
     "dev": "COLLAB_ALLOW_DEV_IDENTITY=1 node server/server.mjs",
     "start": "node server/server.mjs",
-    "test": "node --test tests/concurrency.test.mjs tests/permissions.test.mjs tests/gallery.test.mjs"
+    "start:appkit": "COLLAB_USE_APPKIT=1 node server/server.mjs",
+    "test": "node --test tests/concurrency.test.mjs tests/permissions.test.mjs tests/gallery.test.mjs tests/express.test.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "optionalDependencies": {
+    "@databricks/appkit": "^0.82.0"
+  }
 }
